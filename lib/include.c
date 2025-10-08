@@ -1,0 +1,6 @@
+/* Patches */
+#include "conf.c"
+#include "filters/filters.c"
+#include "func.c"
+#include "background_image.c"
+#include "xresources.c"
