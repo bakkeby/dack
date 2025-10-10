@@ -1,0 +1,37 @@
+.Dd 2025-10-10
+.Dt DACK 1
+.Os dusk
+.Sh NAME
+.Nm dack
+.Nd configurable wallpaper setter
+.Sh SYNOPSIS
+.Nm
+.Op Fl c Ar dack.cfg
+.Sh DESCRIPTION
+.Nm
+is a configurable wallpaper setter that can apply a variety of filters
+on a wallpaper image during runtime.
+
+As an example the desktop background image could be made black and white
+while the source image remains unchanged.
+
+Details on filters can be found in the configuration file.
+
+.Sh OPTIONS
+.Bl -tag -width Ds
+.It Fl c, -cfg Ar dack.cfg
+This allows for a specific configuration file to be used at runtime.
+.El
+.Sh EXIT STATUS
+.Ex -std
+.Sh CUSTOMIZATION
+.Nm
+can be customized via runtime configuration dack.cfg placed in
+~/.config/dack/ or XDG_CONFIG_HOME equivalent.
+
+Optionally a configuration file can be specified using the
+DACK_CONFIG_PATH environment variable.
+
+A configuration file passed
+as a command line argument will take precedence.
+
