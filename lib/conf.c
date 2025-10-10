@@ -6,31 +6,16 @@
 const char *progname = "dack";
 static char *cfg_filename = "dack.cfg";
 
-static char **colorname = NULL;
+static NamedColor *colors = NULL;
 static EffectParams *background_filters = NULL;
-static ResourcePref *resources = NULL;
 uint64_t settings = 0;
+static int num_colors = 0;
 static int num_rectangles = 0;
-static int num_resources = 0;
 static int num_background_filters = 0;
 static int logosize = 75;
 static int logow = 12;
 static int logoh = 6;
 static XRectangle *rectangles = NULL;
-
-#define map(F) { #F, F }
-
-static const struct nv float_string_names[] = {
-	map(INIT),
-	map(INPUT),
-	map(FAILED),
-	map(CAPS),
-	map(PAM),
-	map(BLOCKS),
-	{ NULL, 0 }
-};
-
-#undef map
 
 #include "lib/libconfig_helper_functions.c"
 
@@ -47,12 +32,18 @@ static void load_logo(config_t *cfg);
 static void load_filters(config_setting_t *filters_t, int *num_filters, EffectParams **filter_params);
 
 static FilterFunc *parse_effect_filter(const char *name);
-static void generate_resource_strings(void);
-static void add_resource_binding(const char *string, void *ptr);
 
 int startswith(const char *needle, const char *haystack)
 {
 	return !strncmp(haystack, needle, strlen(needle));
+}
+
+unsigned long
+strtopixel(Display *dpy, int cmap, const char *string)
+{
+	XColor color, dummy;
+	XAllocNamedColor(dpy, cmap, string, &color, &dummy);
+	return color.pixel;
 }
 
 void
@@ -95,8 +86,8 @@ load_config(void)
 	if (config_read_file(&cfg, config_file)) {
 		load_functionality(&cfg);
 		load_misc(&cfg);
-		load_background(&cfg);
 		load_colors(&cfg);
+		load_background(&cfg);
 		load_logo(&cfg);
 	} else if (strcmp(config_error_text(&cfg), "file I/O error")) {
 		fprintf(stderr, "Error reading config at %s\n", config_file);
@@ -108,7 +99,6 @@ load_config(void)
 	}
 
 	load_fallback_config();
-	generate_resource_strings();
 	config_destroy(&cfg);
 }
 
@@ -123,16 +113,15 @@ cleanup_config(void)
 {
 	int i, s;
 
-	// if (colorname != def_colorname) {
-	// 	for (i = 0; i < NUMCOLS; i++) {
-	// 		free(colorname[i]);
-	// 	}
-	// 	free(colorname);
-	// }
-
-	for (i = 0; i < num_resources; i++)
-		free(resources[i].name);
-	free(resources);
+	for (i = 0; i < num_colors; i++) {
+		free(colors[i].name);
+		free(colors[i].value);
+		if (colors[i].resource) {
+			free(colors[i].resource->name);
+			free(colors[i].resource);
+		}
+	}
+	free(colors);
 
 	for (i = 0; i < num_background_filters; i++) {
 		for (s = 0; s < background_filters[i].num_string_parameters; s++) {
@@ -151,20 +140,28 @@ load_misc(config_t *cfg)
 void
 load_colors(config_t *cfg)
 {
-	config_setting_t *cols;
+	int i;
+	config_setting_t *cols, *col;
+	const char *string;
 
 	cols = config_lookup(cfg, "colors");
-	if (!cols || !config_setting_is_group(cols))
+	if (!cols || !config_setting_is_list(cols))
 		return;
+	num_colors = config_setting_length(cols);
 
-	colorname = calloc(NUMCOLS, sizeof(char *));
+	colors = calloc(num_colors, sizeof(NamedColor));
 
-	config_setting_lookup_strdup(cols, "init", &colorname[INIT]);
-	config_setting_lookup_strdup(cols, "input", &colorname[INPUT]);
-	config_setting_lookup_strdup(cols, "failed", &colorname[FAILED]);
-	config_setting_lookup_strdup(cols, "caps", &colorname[CAPS]);
-	config_setting_lookup_strdup(cols, "pam", &colorname[PAM]);
-	config_setting_lookup_strdup(cols, "blocks", &colorname[BLOCKS]);
+	for (i = 0; i < num_colors; i++) {
+		col = config_setting_get_elem(cols, i);
+		config_setting_lookup_strdup(col, "name", &colors[i].name);
+		config_setting_lookup_strdup(col, "default", &colors[i].value);
+		if (config_setting_lookup_string(col, "resource", &string)) {
+			colors[i].resource = ecalloc(1, sizeof(ResourcePref));
+			colors[i].resource->name = strdup(string);
+			colors[i].resource->type = STRING;
+			colors[i].resource->dst = &colors[i].value;
+		}
+	}
 }
 
 void
@@ -225,6 +222,7 @@ void
 load_filters(config_setting_t *filters_t, int *num_filters, EffectParams **filters)
 {
 	int i, p, num_params;
+	double val;
 
 	const char *string;
 	const config_setting_t *filter_t, *params_t, *param_t;
@@ -252,8 +250,10 @@ load_filters(config_setting_t *filters_t, int *num_filters, EffectParams **filte
 		for (p = 0; p < num_params; p++) {
 			param_t = config_setting_get_elem(params_t, p);
 			if (config_setting_type(param_t) == CONFIG_TYPE_STRING &&
-					!config_setting_parse_float_string(param_t))
+					!config_setting_parse_float_string(param_t, &val))
+			{
 				str_count++;
+			}
 		}
 
 		if (str_count > 0) {
@@ -264,10 +264,13 @@ load_filters(config_setting_t *filters_t, int *num_filters, EffectParams **filte
 		/* Second pass: assign values */
 		int str_index = 0;
 		int p_idx = 0;
+
+
 		for (p = 0; p < num_params && p_idx < 8; p++) {
 			param_t = config_setting_get_elem(params_t, p);
+
 			if (config_setting_type(param_t) == CONFIG_TYPE_STRING &&
-					!config_setting_parse_float_string(param_t)) {
+					!config_setting_parse_float_string(param_t, &val)) {
 				string = config_setting_get_string(param_t);
 				(*filters)[i].string_parameters[str_index++] = strdup(string);
 			} else {
@@ -294,27 +297,4 @@ parse_effect_filter(const char *name)
     }
 
     return NULL;
-}
-
-void
-generate_resource_strings(void)
-{
-	resources = calloc(NUMCOLS, sizeof(ResourcePref));
-
-	/* Add resource strings */
-	add_resource_binding("locked", &colorname[INIT]);
-	add_resource_binding("input", &colorname[INPUT]);
-	add_resource_binding("failed", &colorname[FAILED]);
-	add_resource_binding("capslock", &colorname[CAPS]);
-	add_resource_binding("blocks", &colorname[BLOCKS]);
-	add_resource_binding("pamauth", &colorname[PAM]);
-}
-
-void
-add_resource_binding(const char *string, void *ptr)
-{
-	resources[num_resources].name = strdup(string);
-	resources[num_resources].type = STRING;
-	resources[num_resources].dst = ptr;
-	num_resources++;
 }

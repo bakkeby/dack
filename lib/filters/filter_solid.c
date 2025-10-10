@@ -5,14 +5,13 @@ filter_solid_color(XImage *img, EffectParams *p, struct lock *lock)
 	if (!img)
 		return;
 
-	int color_idx = CLAMP((int)p->parameters[0], 0, NUMCOLS - 1);
-	unsigned long pixel = lock->colors[color_idx];
+	unsigned long pixel = 0;
 
-	/* Allocate data if needed */
-	if (!img->data) {
-		img->data = malloc(img->bytes_per_line * img->height);
-		if (!img->data)
-			return; /* OOM */
+	if (p->num_string_parameters > 0) {
+		pixel = strtopixel(lock->dpy, lock->cmap, p->string_parameters[0]);
+	} else if (num_colors) {
+		int col_idx = (int)p->parameters[0];
+		pixel = colors[col_idx].pixel;
 	}
 
 	int bpp    = img->bits_per_pixel / 8;   /* bytes per pixel (rounded down) */

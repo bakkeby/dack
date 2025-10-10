@@ -40,7 +40,6 @@ static void filter_mosaic(XImage *img, EffectParams *p, struct lock *lock);
 static void filter_pixelate(XImage *img, EffectParams *p, struct lock *lock);
 static void filter_posterize(XImage *img, EffectParams *p, struct lock *lock);
 static void filter_posterize_bit_depth(XImage *img, EffectParams *p, struct lock *lock);
-static void filter_random_blocks(XImage *img, EffectParams *p, struct lock *lock);
 static void filter_saturation(XImage *img, EffectParams *p, struct lock *lock);
 static void filter_scanlines(XImage *img, EffectParams *p, struct lock *lock);
 static void filter_screenshot(XImage *img, EffectParams *p, struct lock *lock);
@@ -98,7 +97,6 @@ static const struct effect_map effect_names[] = {
 	{ "pixelate", filter_pixelate },
 	{ "posterize", filter_posterize },
 	{ "posterize_bit_depth", filter_posterize_bit_depth },
-	{ "random_blocks", filter_random_blocks },
 	{ "rain_shift_vert", filter_rain_shift_vert },
 	{ "rain_shift_horz", filter_rain_shift_horz },
 	{ "saturation", filter_saturation },

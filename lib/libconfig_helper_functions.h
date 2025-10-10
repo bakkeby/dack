@@ -4,7 +4,7 @@ const char *setting_get_string_elem(const config_setting_t *cfg, int i);
 static int setting_get_int_elem(const config_setting_t *cfg, int i);
 static double setting_get_float_elem(const config_setting_t *cfg, int i);
 const config_setting_t *setting_get_elem(const config_setting_t *cfg, int i);
-static double config_setting_parse_float_string(const config_setting_t *cfg);
+static int config_setting_parse_float_string(const config_setting_t *cfg, double *value);
 
 static int config_lookup_strdup(const config_t *cfg, const char *name, char **strptr);
 static int config_setting_lookup_strdup(const config_setting_t *cfg, const char *name, char **strptr);

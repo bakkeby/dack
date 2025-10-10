@@ -28,7 +28,15 @@ filter_logo(XImage *img, EffectParams *p, struct lock *lock)
 	if (!img || !img->data | !lock->rectangles)
 		return;
 
-	int fg = lock->colors[CLAMP((int)p->parameters[0], 0, NUMCOLS - 1)];
+	unsigned long pixel = 0;
+
+	if (p->num_string_parameters > 0) {
+		pixel = strtopixel(lock->dpy, lock->cmap, p->string_parameters[0]);
+	} else if (num_colors) {
+		int col_idx = (int)p->parameters[0];
+		pixel = colors[col_idx].pixel;
+	}
+
 	int bpp    = img->bits_per_pixel / 8;
 	int stride = img->bytes_per_line;
 
@@ -39,9 +47,9 @@ filter_logo(XImage *img, EffectParams *p, struct lock *lock)
 			for (int x = 0; x < r.width; x++) {
 				uint8_t *px = row + x * bpp;
 				/* Assume 24/32 bpp TrueColor */
-				px[0] = fg & 0xFF;        /* B */
-				px[1] = (fg >> 8) & 0xFF; /* G */
-				px[2] = (fg >> 16) & 0xFF;/* R */
+				px[0] = pixel & 0xFF;        /* B */
+				px[1] = (pixel >> 8) & 0xFF; /* G */
+				px[2] = (pixel >> 16) & 0xFF;/* R */
 				if (bpp == 4)
 					px[3] = 0xFF; /* alpha/unused */
 			}

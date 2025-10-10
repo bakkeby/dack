@@ -55,6 +55,8 @@ setting_get_float_elem(const config_setting_t *cfg, int i)
 	if (!cfg)
 		return 0;
 
+	double ret = 0.0;
+
 	switch (config_setting_type(cfg)) {
 	case CONFIG_TYPE_GROUP:
 	case CONFIG_TYPE_LIST:
@@ -65,7 +67,8 @@ setting_get_float_elem(const config_setting_t *cfg, int i)
 	case CONFIG_TYPE_INT:
 		return (double)config_setting_get_int(cfg);
 	case CONFIG_TYPE_STRING:
-		return (double)config_setting_parse_float_string(cfg);
+		config_setting_parse_float_string(cfg, &ret);
+		return ret;
 	}
 
 	return config_setting_get_float(cfg);
@@ -87,8 +90,8 @@ setting_get_elem(const config_setting_t *cfg, int i)
 	return cfg;
 }
 
-double
-config_setting_parse_float_string(const config_setting_t *cfg)
+int
+config_setting_parse_float_string(const config_setting_t *cfg, double *value)
 {
 	int i;
 	const char *string = config_setting_get_string(cfg);
@@ -96,9 +99,11 @@ config_setting_parse_float_string(const config_setting_t *cfg)
 	if (!string)
 		return 0;
 
-	for (i = 0; float_string_names[i].name != NULL; i++) {
-		if (strcmp(float_string_names[i].name, string) == 0)
-			return float_string_names[i].value;
+	for (i = 0; i < num_colors; i++) {
+		if (strcmp(colors[i].name, string) == 0) {
+			*value = (double)i;
+			return 1;
+		}
 	}
 
 	return 0;

@@ -1,5 +1,7 @@
 #include <sys/stat.h>
+#include <fcntl.h>
 #include <dirent.h>
+#include <unistd.h>
 #if HAVE_IMLIB
 #include <Imlib2.h>
 #endif

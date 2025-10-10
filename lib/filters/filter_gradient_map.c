@@ -22,15 +22,26 @@ struct Gradient {
 };
 
 /* Linear interpolate between two stops */
-static void gradient_lerp(struct GradientStop *a, struct GradientStop *b, double t,
-                          unsigned char *r, unsigned char *g, unsigned char *bcol) {
+static void gradient_lerp(
+	struct GradientStop *a,
+	struct GradientStop *b,
+	double t,
+	unsigned char *r,
+	unsigned char *g,
+	unsigned char *bcol
+) {
 	*r = (unsigned char)((1.0 - t) * a->r + t * b->r);
 	*g = (unsigned char)((1.0 - t) * a->g + t * b->g);
 	*bcol = (unsigned char)((1.0 - t) * a->b + t * b->b);
 }
 
-static void gradient_lookup(struct Gradient *grad, double pos,
-                            unsigned char *r, unsigned char *g, unsigned char *b) {
+static void gradient_lookup(
+	struct Gradient *grad,
+	double pos,
+	unsigned char *r,
+	unsigned char *g,
+	unsigned char *b
+) {
 	if (pos <= grad->stops[0].pos) {
 		*r = grad->stops[0].r;
 		*g = grad->stops[0].g;
@@ -57,11 +68,13 @@ static void gradient_lookup(struct Gradient *grad, double pos,
 /* Parse "0:#000000,0.5:#FF0000,1:#FFFFFF" */
 static struct Gradient *parse_gradient_string(const char *str)
 {
-	if (!str) return NULL;
+	if (!str)
+		return NULL;
 
 	/* Work on a copy so we can strtok safely */
 	char *buf = strdup(str);
-	if (!buf) return NULL;
+	if (!buf)
+		return NULL;
 
 	int capacity = 8, count = 0;
 	struct GradientStop *stops = malloc(capacity * sizeof(*stops));
@@ -70,8 +83,8 @@ static struct Gradient *parse_gradient_string(const char *str)
 	char *token = strtok(buf, ",");
 	while (token) {
 		double pos = 0.0;
-		char color[16];
-		if (sscanf(token, "%lf:%15s", &pos, color) == 2) {
+		char color[64];
+		if (sscanf(token, "%lf:%63s", &pos, color) == 2) {
 			if (count >= capacity) {
 				capacity *= 2;
 				stops = realloc(stops, capacity * sizeof(*stops));
@@ -84,6 +97,18 @@ static struct Gradient *parse_gradient_string(const char *str)
 				stops[count].g = g;
 				stops[count].b = b;
 				count++;
+			} else {
+				for (int i = 0; i < num_colors; i++) {
+					if (strcmp(color, colors[i].name) == 0) {
+						unsigned long pixel = colors[i].pixel;
+						stops[count].pos = pos;
+						stops[count].r = (pixel >> 16) & 0xFF;
+						stops[count].g = (pixel >> 8) & 0xFF;
+						stops[count].b = (pixel) & 0xFF;
+						count++;
+						break;
+					}
+				}
 			}
 		}
 		token = strtok(NULL, ",");
@@ -104,12 +129,17 @@ static struct Gradient *parse_gradient_string(const char *str)
 void
 filter_gradient_map(XImage *img, EffectParams *p, struct lock *lock)
 {
-	if (!img || !img->data || !lock || !lock->m) return;
+	if (!img || !img->data || !lock || !lock->m)
+		return;
 
 	/* Expect first string parameter = gradient definition */
-	if (p->num_string_parameters == 0) return;
+	if (p->num_string_parameters == 0)
+		return;
+
 	struct Gradient *grad = parse_gradient_string(p->string_parameters[0]);
-	if (!grad) return;
+
+	if (!grad)
+		return;
 
 	double blend = (p->parameters[0] && p->parameters[0] <= 1.0) ? p->parameters[0] : 1.0;
 	int bpp = (img->bits_per_pixel + 7) / 8;

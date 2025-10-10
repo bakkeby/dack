@@ -16,16 +16,6 @@
 #define MAX(A, B)               ((A) > (B) ? (A) : (B))
 #define CLAMP(V,L,U) (V < L ? L : V > U ? U : V)
 
-enum {
-	INIT,
-	INPUT,
-	FAILED,
-	CAPS,
-	PAM,
-	BLOCKS,
-	NUMCOLS
-};
-
 /* Xresources preferences */
 enum resource_type {
 	STRING = 0,
@@ -39,6 +29,14 @@ typedef struct {
 	void *dst;
 } ResourcePref;
 
+typedef struct NamedColor NamedColor;
+struct NamedColor {
+	char *name;
+	char *value;
+	unsigned long pixel;
+	ResourcePref *resource;
+};
+
 typedef struct Monitor Monitor;
 struct Monitor {
 	int mx, my, mw, mh;  /* monitor size */
@@ -48,9 +46,9 @@ struct Monitor {
 
 struct lock {
 	int screen;
+	int cmap;
 	Window root;
 	Display *dpy;
-	unsigned long colors[NUMCOLS];
 	Monitor *m;
 	unsigned int x, y;
 	XRectangle *rectangles;
@@ -182,8 +180,24 @@ free_root_pixmap(Display *dpy, Window root)
 	}
 
 	/* Free unique pixmaps */
-	for (int i = 0; i < count; i++)
-		XFreePixmap(dpy, pixmaps[i]);
+	for (int i = 0; i < count; i++) {
+		/* This was originally intended to be a call to XFreePixmap to free
+		 * the previous background pixmap, but it turns out that when we
+		 * make the call to XSetCloseDownMode telling the X server to retain
+		 * data, e.g. the pixmap, instead of purging everything when the
+		 * connection close, the X server also keeps the display connection
+		 * alive despite the call to XCloseDisplay. So while the XFreePixmap
+		 * successfully frees the pixmap in question we end up leaking the
+		 * previous display connection and we eventually can't start new
+		 * windows due to the "Maximum number of clients reached" error.
+		 *
+		 * As such instead of freeing the pixmap expicitly we make a call
+		 * to XKillClient to kill the connection in relation to the previous
+		 * pixmap, which also makes the X server free the pixmap.
+		 * This solution was found in the feh source code.
+		 */
+		XKillClient(dpy, pixmaps[i]);
+	}
 
 	/* Remove properties */
 	for (int i = 0; i < 2; i++)
@@ -220,10 +234,13 @@ main(int argc, char **argv)
 	if (!(dpy = XOpenDisplay(NULL)))
 		die("dack: cannot open display\n");
 
+	xrdb_init(dpy);
+
 	Window root = DefaultRootWindow(dpy);
 	int screen = DefaultScreen(dpy);
 	Visual *visual = DefaultVisual(dpy, screen);
 	int depth = DefaultDepth(dpy, screen);
+	int cmap = DefaultColormap(dpy, screen);
 	int root_w = DisplayWidth(dpy, screen);
 	int root_h = DisplayHeight(dpy, screen);
 	Monitor *mons = get_monitors(dpy, root);
@@ -248,10 +265,16 @@ main(int argc, char **argv)
 		return 1;
 	}
 
+	/* Allocate colors */
+	for (i = 0; i < num_colors; i++) {
+		colors[i].pixel = strtopixel(dpy, cmap, colors[i].value);
+	}
+
 	/* Set up lock struct, for compatibility with filters. */
 	struct lock *lock = ecalloc(1, sizeof(struct lock));
 
 	lock->screen = screen;
+	lock->cmap = cmap;
 	lock->root = root;
 	lock->dpy = dpy;
 	lock->m = mons;
