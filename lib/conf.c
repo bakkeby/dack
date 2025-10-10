@@ -5,6 +5,7 @@
 #define PATH_MAX 4096
 const char *progname = "dack";
 static char *cfg_filename = "dack.cfg";
+static char *cmd_filename = NULL;
 
 static NamedColor *colors = NULL;
 static EffectParams *background_filters = NULL;
@@ -77,7 +78,13 @@ load_config(void)
 	char config_file[PATH_MAX] = {0};
 
 	const char *envcfg = getenv("DACK_CONFIG_PATH");
-	const char *filename = (envcfg && strlen(envcfg) ? envcfg : cfg_filename);
+	const char *filename = (
+		cmd_filename
+		? cmd_filename
+		: envcfg && strlen(envcfg)
+		? envcfg
+		: cfg_filename
+	);
 
 	set_config_path(filename, config_path, config_file);
 	config_init(&cfg);

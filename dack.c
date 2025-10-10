@@ -225,6 +225,11 @@ main(int argc, char **argv)
 	int i;
 	Display *dpy;
 
+	if (argc == 3 && (!strcmp("-c", argv[1]) || !strcmp("--cfg", argv[1])))
+		cmd_filename = argv[2];
+	else if (argc != 1)
+		die("usage: dack [-c dack.cfg]");
+
 	/* Set random seed, used by filters. */
 	time_t t;
 	srand((unsigned) time(&t));
