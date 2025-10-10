@@ -21,6 +21,13 @@ Details on filters can be found in the configuration file.
 .Bl -tag -width Ds
 .It Fl c, -cfg Ar dack.cfg
 This allows for a specific configuration file to be used at runtime.
+.br
+Note that a plain filename will be considered relative to the ~/.config/dack/
+.br
+or XDG_CONFIG_HOME equivalent directory, so use full path if the file lives
+.br
+elsewhere.
+
 .El
 .Sh EXIT STATUS
 .Ex -std
