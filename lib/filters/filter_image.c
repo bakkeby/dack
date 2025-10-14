@@ -12,15 +12,18 @@ filter_wallpaper(XImage *img, EffectParams *p, struct lock *lock)
 {
 	Monitor *m;
 	int idx;
+	const char *path;
 
 	if (!p->num_string_parameters)
 		return;
 
 	float blend = (float)(p->parameters[0] ? p->parameters[0] : 1.0);
 	blend = CLAMP(blend, 0.0, 1.0);
+	int blend_mode = (int)(p->parameters[1]);
 
 	for (m = lock->m, idx = 0; m; m = m->next, idx++) {
-		load_image_from_string(lock->dpy, m, img, p->string_parameters[idx % p->num_string_parameters], blend);
+		path = p->string_parameters[idx % p->num_string_parameters];
+		load_image_from_string(lock->dpy, m, img, path, blend, blend_mode);
 	}
 }
 
@@ -90,11 +93,12 @@ filter_image(XImage *img, EffectParams *p, struct lock *lock)
 	int target_monitor = p->parameters[0];
 	float blend = (float)(p->parameters[1] ? p->parameters[1] : 1.0);
 	blend = CLAMP(blend, 0.0, 1.0);
+	int blend_mode = (int)(p->parameters[2]);
 
 	for (m = lock->m, idx = 0; m; m = m->next, idx++) {
 		if (idx != target_monitor)
 			continue;
 
-		load_image_from_string(lock->dpy, m, img, p->string_parameters[0], blend);
+		load_image_from_string(lock->dpy, m, img, p->string_parameters[0], blend, blend_mode);
 	}
 }

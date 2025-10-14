@@ -28,10 +28,8 @@ void filter_mosaic(XImage *img, EffectParams *p, struct lock *lock)
 	int alpha_mask_shift = 1;
 
 	/* Clamp tile dimensions to at least 1 pixel and at most the image size */
-	if (tile_w < 1)   tile_w = 1;
-	if (tile_h < 1)   tile_h = 1;
-	if (tile_w > img->width)  tile_w = img->width;
-	if (tile_h > img->height) tile_h = img->height;
+	tile_w = CLAMP(tile_w, 1, img->width);
+	tile_h = CLAMP(tile_h, 1, img->height);
 
 	/* -------------------------------------------------------------
 	 *  Core algorithm – for each tile we compute the average colour

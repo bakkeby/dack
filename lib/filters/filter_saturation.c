@@ -24,17 +24,22 @@ filter_saturation(XImage *img, EffectParams *p, struct lock *lock)
 			for (int x = m->mx; x < m->mx + m->mw; x++) {
 				unsigned char *px = row + x * bpp;
 
-				unsigned char r = px[2], g = px[1], b = px[0];
-				double h, s, l;
+				RGB rgb = {
+					.r = px[2],
+					.g = px[1],
+					.b = px[0],
+				};
 
-				rgb_to_hsl(r, g, b, &h, &s, &l);
-				s *= factor;
-				if (s > 1.0) s = 1.0;
-				hsl_to_rgb(h, s, l, &r, &g, &b);
+				HSL hsl = rgb_to_hsl(rgb);
 
-				px[2] = r;
-				px[1] = g;
-				px[0] = b;
+				hsl.s *= factor;
+				if (hsl.s > 1.0) hsl.s = 1.0;
+
+				rgb = hsl_to_rgb(hsl);
+
+				px[2] = rgb.r;
+				px[1] = rgb.g;
+				px[0] = rgb.b;
 			}
 		}
 	}

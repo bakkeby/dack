@@ -39,14 +39,9 @@ filter_emboss(XImage *img, EffectParams *p, struct lock *lock)
 			int r1 = p1[2], g1 = p1[1], b1 = p1[0];
 			int r2 = p2[2], g2 = p2[1], b2 = p2[0];
 
-			int dr = (intensity * (r1 - r2)) + 128;
-			int dg = (intensity * (g1 - g2)) + 128;
-			int db = (intensity * (b1 - b2)) + 128;
-
-			/* clamp */
-			if (dr < 0) { dr = 0; }; if (dr > 255) { dr = 255; };
-			if (dg < 0) { dg = 0; }; if (dg > 255) { dg = 255; };
-			if (db < 0) { db = 0; }; if (db > 255) { db = 255; };
+			int dr = CLAMP255((intensity * (r1 - r2)) + 128);
+			int dg = CLAMP255((intensity * (g1 - g2)) + 128);
+			int db = CLAMP255((intensity * (b1 - b2)) + 128);
 
 			/* blend */
 			dst[2] = (unsigned char)((1.0 - blend) * r1 + blend * dr);

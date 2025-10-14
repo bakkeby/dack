@@ -77,8 +77,14 @@ random_file_from_dir(const char *dirname)
 }
 
 int
-load_image_from_string(Display *dpy, Monitor *m, XImage *image, const char *file_or_directory, float blend)
-{
+load_image_from_string(
+	Display *dpy,
+	Monitor *m,
+	XImage *image,
+	const char *file_or_directory,
+	float blend,
+	BlendMode mode
+) {
 	struct stat statbuf;
 	int ret = 0;
 	char *filename = NULL;
@@ -100,7 +106,7 @@ load_image_from_string(Display *dpy, Monitor *m, XImage *image, const char *file
 		filename = strdup(expanded);
 	}
 
-	ret = load_image_from_file(dpy, m, image, filename, blend);
+	ret = load_image_from_file(dpy, m, image, filename, blend, mode);
 	free(filename);
 
 bail:
@@ -110,8 +116,14 @@ bail:
 
 #if HAVE_IMLIB
 int
-load_image_from_file(Display *dpy, Monitor *m, XImage *image, const char *filename, float blend)
-{
+load_image_from_file(
+	Display *dpy,
+	Monitor *m,
+	XImage *image,
+	const char *filename,
+	float blend,
+	BlendMode mode
+) {
 	if (!filename || !strlen(filename))
 		return -1;
 
@@ -133,43 +145,15 @@ load_image_from_file(Display *dpy, Monitor *m, XImage *image, const char *filena
 		return -1;
 	}
 
-	/* Determine cropped/centered region, like farbfeld */
-	int draw_w = (width  > m->mw) ? m->mw : width;
-	int draw_h = (height > m->mh) ? m->mh : height;
+	XImage src = {
+		.data = (char *)data,
+		.width = width,
+		.height = height,
+		.bits_per_pixel = image->bits_per_pixel,
+		.bytes_per_line = width * 4,  /* since imlib2 gives RGBA32 */
+	};
 
-	int start_x = m->mx + (m->mw - draw_w) / 2;
-	int start_y = m->my + (m->mh - draw_h) / 2;
-
-	int src_x0 = (width  > m->mw) ? (width  - m->mw) / 2 : 0;
-	int src_y0 = (height > m->mh) ? (height - m->mh) / 2 : 0;
-
-	int bpp = image->bits_per_pixel / 8;
-
-	for (int y = 0; y < draw_h; y++) {
-		uint8_t *row = (uint8_t *)image->data + (start_y + y) * image->bytes_per_line;
-		for (int x = 0; x < draw_w; x++) {
-			uint32_t argb = data[(y + src_y0) * width + (x + src_x0)];
-
-			uint8_t a = (argb >> 24) & 0xFF;
-			uint8_t r = (argb >> 16) & 0xFF;
-			uint8_t g = (argb >> 8)  & 0xFF;
-			uint8_t b = (argb)       & 0xFF;
-
-			float alpha = MAX((a / 255.0f) - (1.0 - blend), 0.0);
-
-			uint8_t *dst = row + (start_x + x) * bpp;
-
-			uint8_t dst_b = dst[0];
-			uint8_t dst_g = dst[1];
-			uint8_t dst_r = dst[2];
-
-			// blend
-			dst[2] = (uint8_t)(r * alpha + dst_r * (1.0f - alpha));
-			dst[1] = (uint8_t)(g * alpha + dst_g * (1.0f - alpha));
-			dst[0] = (uint8_t)(b * alpha + dst_b * (1.0f - alpha));
-		}
-	}
-
+	blend_images(image, &src, m, blend, mode);
 	imlib_free_image();
 
 	return 0;
@@ -235,8 +219,14 @@ ff_close(FFReader *r)
 }
 
 int
-load_image_from_file(Display *dpy, Monitor *m, XImage *image, const char *filename, float blend)
-{
+load_image_from_file(
+	Display *dpy,
+	Monitor *m,
+	XImage *image,
+	const char *filename,
+	float blend,
+	BlendMode mode
+) {
 	if (!filename || !strlen(filename))
 		return -1;
 
@@ -279,49 +269,16 @@ load_image_from_file(Display *dpy, Monitor *m, XImage *image, const char *filena
 	}
 	ff_close(&r);
 
-	/* Compute drawable region */
-	uint32_t draw_w = (width  > (uint32_t)m->mw) ? m->mw : width;
-	uint32_t draw_h = (height > (uint32_t)m->mh) ? m->mh : height;
+	XImage src = {
+		.data = (char *)ffbuf,
+		.width = width,
+		.height = height,
+		.bits_per_pixel = 64,
+		.bytes_per_line = width * 8,  /* since farbfeld gives RGBA64 */
+	};
 
-	/* Center in monitor */
-	int start_x = m->mx + (m->mw - draw_w) / 2;
-	int start_y = m->my + (m->mh - draw_h) / 2;
-
-	/* If image is bigger, crop from its center */
-	uint32_t src_x0 = (width  > (uint32_t)m->mw) ? (width  - m->mw) / 2 : 0;
-	uint32_t src_y0 = (height > (uint32_t)m->mh) ? (height - m->mh) / 2 : 0;
-
-	int bpp = image->bits_per_pixel / 8;
-
-	for (uint32_t y = 0; y < draw_h; y++) {
-		uint8_t *row = (uint8_t *)image->data + (start_y + y) * image->bytes_per_line;
-		for (uint32_t x = 0; x < draw_w; x++) {
-			uint8_t *src = ffbuf + ((y + src_y0) * width + (x + src_x0)) * 8;
-
-			uint16_t r16 = (src[0] << 8) | src[1];
-			uint16_t g16 = (src[2] << 8) | src[3];
-			uint16_t b16 = (src[4] << 8) | src[5];
-			uint16_t a16 = (src[6] << 8) | src[7];
-
-			uint8_t r8 = r16 >> 8;
-			uint8_t g8 = g16 >> 8;
-			uint8_t b8 = b16 >> 8;
-			uint8_t a8 = a16 >> 8;
-
-			float alpha = MAX((a8 / 255.0f) - (1.0 - blend), 0.0);
-
-			uint8_t *dst = row + (start_x + x) * bpp;
-
-			uint8_t dst_b = dst[0];
-			uint8_t dst_g = dst[1];
-			uint8_t dst_r = dst[2];
-
-			/* blend */
-			dst[2] = (uint8_t)(r8 * alpha + dst_r * (1.0f - alpha));
-			dst[1] = (uint8_t)(g8 * alpha + dst_g * (1.0f - alpha));
-			dst[0] = (uint8_t)(b8 * alpha + dst_b * (1.0f - alpha));
-		}
-	}
+	blend_images(image, &src, m, blend, mode);
+	free(ffbuf);
 
 	return 0;
 }

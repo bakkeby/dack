@@ -18,10 +18,8 @@ static int logow = 12;
 static int logoh = 6;
 static XRectangle *rectangles = NULL;
 
-#include "lib/libconfig_helper_functions.c"
-
+static int parse_blend_name(const char *name);
 static void set_config_path(const char* filename, char *config_path, char *config_file);
-
 static void cleanup_config(void);
 static void load_config(void);
 static void load_fallback_config(void);
@@ -33,6 +31,8 @@ static void load_logo(config_t *cfg);
 static void load_filters(config_setting_t *filters_t, int *num_filters, EffectParams **filter_params);
 
 static FilterFunc *parse_effect_filter(const char *name);
+
+#include "lib/libconfig_helper_functions.c"
 
 int startswith(const char *needle, const char *haystack)
 {
@@ -295,13 +295,32 @@ parse_effect_filter(const char *name)
 	if (!name)
 		return NULL;
 
-	if (startswith("filter_", name))
+	if (startswith("filter_", name) || startswith("FILTER_", name))
 		name += 7;
 
-    for (i = 0; effect_names[i].name != NULL; i++) {
-        if (!strcmp(effect_names[i].name, name))
-            return effect_names[i].func;
-    }
+	for (i = 0; effect_names[i].name != NULL; i++) {
+		if (!strcmp(effect_names[i].name, name))
+			return effect_names[i].func;
+	}
 
-    return NULL;
+	return NULL;
+}
+
+int
+parse_blend_name(const char *name)
+{
+	int i;
+
+	if (!name)
+		return -1;
+
+	if (startswith("blend_", name) || startswith("BLEND_", name))
+		name += 6;
+
+	for (i = 0; blend_names[i].name != NULL; i++) {
+		if (!strcasecmp(blend_names[i].name, name))
+			return blend_names[i].mode;
+	}
+
+	return -1;
 }

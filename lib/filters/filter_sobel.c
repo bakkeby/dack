@@ -27,7 +27,7 @@ filter_sobel(XImage *img, EffectParams *p, struct lock *lock)
 			int sumRx = 0, sumGx = 0, sumBx = 0;
 			int sumRy = 0, sumGy = 0, sumBy = 0;
 
-			// Apply 3x3 Sobel kernel
+			/* Apply 3x3 Sobel kernel */
 			for (int ky = -1; ky <= 1; ky++) {
 				uint8_t *row = tmp + (y + ky) * stride;
 				for (int kx = -1; kx <= 1; kx++) {
@@ -46,9 +46,9 @@ filter_sobel(XImage *img, EffectParams *p, struct lock *lock)
 			}
 
 			uint8_t *dst = data + y * stride + x * bpp;
-			dst[0] = clamp255((int)sqrt(sumBx * sumBx + sumBy * sumBy));
-			dst[1] = clamp255((int)sqrt(sumGx * sumGx + sumGy * sumGy));
-			dst[2] = clamp255((int)sqrt(sumRx * sumRx + sumRy * sumRy));
+			dst[0] = CLAMP255((int)sqrt(sumBx * sumBx + sumBy * sumBy));
+			dst[1] = CLAMP255((int)sqrt(sumGx * sumGx + sumGy * sumGy));
+			dst[2] = CLAMP255((int)sqrt(sumRx * sumRx + sumRy * sumRy));
 			// keep dst[3] as is
 		}
 	}

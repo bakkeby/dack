@@ -55,10 +55,6 @@ static void filter_vhs_warp_chroma(XImage *img, EffectParams *p, struct lock *lo
 static void filter_wallpaper(XImage *img, EffectParams *p, struct lock *lock);
 static void filter_wave_distortion(XImage *img, EffectParams *p, struct lock *lock);
 
-static inline uint8_t clamp255(int v) {
-	return v < 0 ? 0 : (v > 255 ? 255 : v);
-}
-
 struct effect_map {
 	const char *name;
 	FilterFunc *func;
