@@ -19,6 +19,7 @@ static int logoh = 6;
 static XRectangle *rectangles = NULL;
 
 static int parse_blend_name(const char *name);
+static int parse_blend_position(const char *name);
 static void set_config_path(const char* filename, char *config_path, char *config_file);
 static void cleanup_config(void);
 static void load_config(void);
@@ -272,7 +273,6 @@ load_filters(config_setting_t *filters_t, int *num_filters, EffectParams **filte
 		int str_index = 0;
 		int p_idx = 0;
 
-
 		for (p = 0; p < num_params && p_idx < 8; p++) {
 			param_t = config_setting_get_elem(params_t, p);
 
@@ -321,6 +321,22 @@ parse_blend_name(const char *name)
 		if (!strcasecmp(blend_names[i].name, name))
 			return blend_names[i].mode;
 	}
+
+	return -1;
+}
+
+int
+parse_blend_position(const char *name)
+{
+	if (!name)
+		return -1;
+
+	if (!strcasecmp(name, "CENTER"))
+		return CENTER;
+	if (!strcasecmp(name, "TILE"))
+		return TILE;
+	if (!strcasecmp(name, "RELATIVE"))
+		return RELATIVE;
 
 	return -1;
 }

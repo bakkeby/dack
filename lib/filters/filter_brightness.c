@@ -22,10 +22,7 @@ filter_brightness(XImage *img, EffectParams *p, struct lock *lock)
 			for (int x = m->mx; x < m->mx + m->mw; x++) {
 				unsigned char *px = row + x * bpp;
 				for (int c = 0; c < 3; c++) {
-					int v = px[c] + offset;
-					if (v < 0) v = 0;
-					if (v > 255) v = 255;
-					px[c] = v;
+					px[c] = CLAMP(px[c] + offset, 0, 255);
 				}
 			}
 		}

@@ -62,6 +62,20 @@ typedef enum {
 	BLEND_LCH_LIGHTNESS,
 } BlendMode;
 
+typedef enum {
+	CENTER,
+	TILE,
+	RELATIVE,
+} BlendPosition;
+
+typedef struct {
+	BlendMode blend_mode;
+	float blend_strength;
+	BlendPosition blend_position;
+	int x;
+	int y;
+} BlendOptions;
+
 struct blend_map {
 	const char *name;
 	BlendMode mode;
@@ -120,4 +134,4 @@ static RGB lch_to_rgb(LCH c);
 static RGB blend_hsl_mode(RGB dst, RGB src, int mode);
 static RGB blend_lch_mode(RGB dst, RGB src, int mode);
 static inline void blend_pixel(uint8_t *dst, uint8_t sr, uint8_t sg, uint8_t sb, uint8_t sa, float blend, BlendMode mode);
-static void blend_images(XImage *dst, XImage *src, Monitor *m, float blend, BlendMode mode);
+static void blend_images(XImage *dst, XImage *src, Monitor *m, BlendOptions *options);

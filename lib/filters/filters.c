@@ -22,7 +22,6 @@
 #include "filter_invert.c"
 #include "filter_logo.c"
 #include "filter_modulation.c"
-#include "filter_mosaic.c"
 #include "filter_noise.c"
 #include "filter_pixelate.c"
 #include "filter_posterize.c"

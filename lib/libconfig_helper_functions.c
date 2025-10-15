@@ -112,6 +112,12 @@ config_setting_parse_float_string(const config_setting_t *cfg, double *value)
 		return 1;
 	}
 
+	i = parse_blend_position(string);
+	if (i > -1) {
+		*value = (double)i;
+		return 1;
+	}
+
 	return 0;
 }
 

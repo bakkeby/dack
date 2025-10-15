@@ -253,9 +253,9 @@ static RGB blend_lch_mode(RGB dst, RGB src, int mode)
 }
 
 static inline void
-blend_pixel(uint8_t *dst, uint8_t src_r8, uint8_t src_g8, uint8_t src_b8, uint8_t src_a8, float blend, BlendMode mode)
+blend_pixel(uint8_t *dst, uint8_t src_r8, uint8_t src_g8, uint8_t src_b8, uint8_t src_a8, float blend_strength, BlendMode mode)
 {
-	float alpha = (src_a8 / 255.0f) * blend;
+	float alpha = (src_a8 / 255.0f) * blend_strength;
 
 	/* Normalised values (between 0.0 and 1.0) */
 	float dr = dst[2] / 255.0f;
@@ -513,11 +513,13 @@ blend_pixel(uint8_t *dst, uint8_t src_r8, uint8_t src_g8, uint8_t src_b8, uint8_
 }
 
 static void
-blend_images(XImage *dst, XImage *src, Monitor *m, float blend, BlendMode mode)
+blend_images(XImage *dst, XImage *src, Monitor *m, BlendOptions *opt)
 {
 	if (!dst || !src || !dst->data || !src->data) {
 		return;
 	}
+
+	int dst_x0 = 0, dst_y0 = 0;
 
 	int dst_bpp = dst->bits_per_pixel / 8;
 	int src_bpp = src->bits_per_pixel / 8;
@@ -527,8 +529,28 @@ blend_images(XImage *dst, XImage *src, Monitor *m, float blend, BlendMode mode)
 	int draw_h = CLAMP(src->height, 0, m->mh);
 
 	/* Center the image based on monitor position */
-	int dst_x0 = m->mx + (m->mw - draw_w) / 2;
-	int dst_y0 = m->my + (m->mh - draw_h) / 2;
+	switch (opt->blend_position) {
+	case CENTER:
+		dst_x0 = m->mx + (m->mw - draw_w) / 2;
+		dst_y0 = m->my + (m->mh - draw_h) / 2;
+		break;
+	case RELATIVE:
+		if (opt->x < 0)
+			dst_x0 = m->mx + m->mw - draw_w + opt->x + 1;
+		else
+			dst_x0 = m->mx + opt->x;
+		if (opt->y < 0)
+			dst_y0 = m->my + m->mh - draw_h + opt->y + 1;
+		else
+			dst_y0 = m->my + opt->y;
+		break;
+	case TILE:
+		dst_x0 = m->mx;
+		dst_y0 = m->my;
+		draw_w = m->mw;
+		draw_h = m->mh;
+		break;
+	}
 
 	/* Starting position for the source window, if greater than destination */
 	int src_x0 = (src->width > m->mw) ? (src->width - m->mw) / 2 : 0;
@@ -536,11 +558,11 @@ blend_images(XImage *dst, XImage *src, Monitor *m, float blend, BlendMode mode)
 
 	for (int y = 0; y < draw_h; y++) {
 		uint8_t *dst_row = (uint8_t *)dst->data + (dst_y0 + y) * dst->bytes_per_line;
-		uint8_t *src_row = (uint8_t *)src->data + (src_y0 + y) * src->bytes_per_line;
+		uint8_t *src_row = (uint8_t *)src->data + (src_y0 + (y % src->height)) * src->bytes_per_line;
 
 		for (int x = 0; x < draw_w; x++) {
 			uint8_t *dst_px = dst_row + (dst_x0 + x) * dst_bpp;
-			uint8_t *src_px = src_row + (src_x0 + x) * src_bpp;
+			uint8_t *src_px = src_row + (src_x0 + (x % src->width)) * src_bpp;
 
 			uint8_t sr, sg, sb, sa = 255;
 
@@ -565,7 +587,7 @@ blend_images(XImage *dst, XImage *src, Monitor *m, float blend, BlendMode mode)
 				break;
 			}
 
-			blend_pixel(dst_px, sr, sg, sb, sa, blend, mode);
+			blend_pixel(dst_px, sr, sg, sb, sa, opt->blend_strength, opt->blend_mode);
 		}
 	}
 }

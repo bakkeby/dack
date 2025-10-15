@@ -82,8 +82,7 @@ load_image_from_string(
 	Monitor *m,
 	XImage *image,
 	const char *file_or_directory,
-	float blend,
-	BlendMode mode
+	BlendOptions *blend_options
 ) {
 	struct stat statbuf;
 	int ret = 0;
@@ -106,7 +105,7 @@ load_image_from_string(
 		filename = strdup(expanded);
 	}
 
-	ret = load_image_from_file(dpy, m, image, filename, blend, mode);
+	ret = load_image_from_file(dpy, m, image, filename, blend_options);
 	free(filename);
 
 bail:
@@ -121,8 +120,7 @@ load_image_from_file(
 	Monitor *m,
 	XImage *image,
 	const char *filename,
-	float blend,
-	BlendMode mode
+	BlendOptions *blend_options
 ) {
 	if (!filename || !strlen(filename))
 		return -1;
@@ -153,7 +151,7 @@ load_image_from_file(
 		.bytes_per_line = width * 4,  /* since imlib2 gives RGBA32 */
 	};
 
-	blend_images(image, &src, m, blend, mode);
+	blend_images(image, &src, m, blend_options);
 	imlib_free_image();
 
 	return 0;
@@ -224,8 +222,7 @@ load_image_from_file(
 	Monitor *m,
 	XImage *image,
 	const char *filename,
-	float blend,
-	BlendMode mode
+	BlendOptions *blend_options
 ) {
 	if (!filename || !strlen(filename))
 		return -1;
@@ -277,7 +274,7 @@ load_image_from_file(
 		.bytes_per_line = width * 8,  /* since farbfeld gives RGBA64 */
 	};
 
-	blend_images(image, &src, m, blend, mode);
+	blend_images(image, &src, m, blend_options);
 	free(ffbuf);
 
 	return 0;

@@ -36,8 +36,8 @@ static void filter_invert(XImage *img, EffectParams *p, struct lock *lock);
 static void filter_logo(XImage *img, EffectParams *p, struct lock *lock);
 static void filter_noise(XImage *img, EffectParams *p, struct lock *lock);
 static void filter_soft_noise(XImage *img, EffectParams *p, struct lock *lock);
+static void filter_mask(XImage *img, EffectParams *p, struct lock *lock);
 static void filter_modulation_glitch(XImage *img, EffectParams *p, struct lock *lock);
-static void filter_mosaic(XImage *img, EffectParams *p, struct lock *lock);
 static void filter_pixelate(XImage *img, EffectParams *p, struct lock *lock);
 static void filter_posterize(XImage *img, EffectParams *p, struct lock *lock);
 static void filter_posterize_bit_depth(XImage *img, EffectParams *p, struct lock *lock);
@@ -88,8 +88,8 @@ static const struct effect_map effect_names[] = {
 	{ "image", filter_image },
 	{ "invert", filter_invert },
 	{ "logo", filter_logo },
+	{ "mask", filter_mask },
 	{ "modulation_glitch", filter_modulation_glitch },
-	{ "mosaic", filter_mosaic },
 	{ "noise", filter_noise },
 	{ "soft_noise", filter_soft_noise },
 	{ "pixelate", filter_pixelate },
