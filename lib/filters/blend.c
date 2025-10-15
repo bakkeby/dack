@@ -279,6 +279,21 @@ blend_pixel(uint8_t *dst, uint8_t src_r8, uint8_t src_g8, uint8_t src_b8, uint8_
 		g = 1.0f - (1.0f - dg) * (1.0f - sg);
 		b = 1.0f - (1.0f - db) * (1.0f - sb);
 		break;
+	case BLEND_HARD_MIX:
+		r = (sr + dr < 1.0f ? 0.0f : 1.0f);
+		g = (sg + dg < 1.0f ? 0.0f : 1.0f);
+		b = (sb + db < 1.0f ? 0.0f : 1.0f);
+		break;
+	case BLEND_MAX:
+		r = MAX(sr, dr);
+		g = MAX(sg, dg);
+		b = MAX(sb, db);
+		break;
+	case BLEND_MIN:
+		r = MIN(sr, dr);
+		g = MIN(sg, dg);
+		b = MIN(sb, db);
+		break;
 	case BLEND_OVERLAY:
 		r = (dr < 0.5f) ? (2.0f * dr * sr) : (1.0f - 2.0f * (1.0f - dr) * (1.0f - sr));
 		g = (dg < 0.5f) ? (2.0f * dg * sg) : (1.0f - 2.0f * (1.0f - dg) * (1.0f - sg));
@@ -297,10 +312,45 @@ blend_pixel(uint8_t *dst, uint8_t src_r8, uint8_t src_g8, uint8_t src_b8, uint8_
 		g = (sg < 0.5f) ? (2.0f * dg * sg) : (1.0f - 2.0f * (1.0f - dg) * (1.0f - sg));
 		b = (sb < 0.5f) ? (2.0f * db * sb) : (1.0f - 2.0f * (1.0f - db) * (1.0f - sb));
 		break;
+	case BLEND_PIN_LIGHT:
+		r = (sr < 0.5) ? ((dr < sr * 2) ? sr * 2 : dr) : ((dr > (sr - 0.5) * 2) ? (sr - 0.5) * 2 : dr);
+		g = (sg < 0.5) ? ((dg < sg * 2) ? sg * 2 : dg) : ((dg > (sg - 0.5) * 2) ? (sg - 0.5) * 2 : dg);
+		b = (sb < 0.5) ? ((db < sb * 2) ? sb * 2 : db) : ((db > (sb - 0.5) * 2) ? (sb - 0.5) * 2 : db);
+		break;
+	case BLEND_VIVID_LIGHT: {
+		/* Burn and dodge values */
+		int sr_burn = 2 * sr;
+		int sr_dodge = 2 * (sr - 0.5);
+		int sg_burn = 2 * sg;
+		int sg_dodge = 2 * (sg - 0.5);
+		int sb_burn = 2 * sb;
+		int sb_dodge = 2 * (sb - 0.5);
+
+		r = (sr < 0.5)
+		  ? (sr_burn == 0) ? 0 : CLAMP(1.0 - ((1.0 - dr) * 1.0/sr_burn), 0.0f, 1.0f)
+		  : (sr_dodge == 1.0) ? 1.0 : CLAMP(dr / (1.0 - sr_dodge), 0.0f, 1.0f);
+		g = (sg < 0.5)
+		  ? (sg_burn == 0) ? 0 : CLAMP(1.0 - ((1.0 - dg) * 1.0/sg_burn), 0.0f, 1.0f)
+		  : (sg_dodge == 1.0) ? 1.0 : CLAMP(dg / (1.0 - sg_dodge), 0.0f, 1.0f);
+		b = (sb < 0.5)
+		  ? (sb_burn == 0) ? 0 : CLAMP(1.0 - ((1.0 - db) * 1.0/sb_burn), 0.0f, 1.0f)
+		  : (sb_dodge == 1.0) ? 1.0 : CLAMP(db / (1.0 - sb_dodge), 0.0f, 1.0f);
+		break;
+	}
+	case BLEND_LINEAR_LIGHT:
+		r = CLAMP(dr + 2 * sr - 1.0, 0.0f, 1.0f);
+		g = CLAMP(dg + 2 * sg - 1.0, 0.0f, 1.0f);
+		b = CLAMP(db + 2 * sb - 1.0, 0.0f, 1.0f);
+		break;
 	case BLEND_DIFFERENCE:
 		r = fabsf(dr - sr);
 		g = fabsf(dg - sg);
 		b = fabsf(db - sb);
+		break;
+	case BLEND_EXCLUSION:
+		r = (dr + sr - 2 * dr * sr);
+		g = (dg + sg - 2 * dg * sg);
+		b = (db + sb - 2 * db * sb);
 		break;
 	case BLEND_ADD:
 		r = fminf(dr + sr, 1.0f);
@@ -351,6 +401,26 @@ blend_pixel(uint8_t *dst, uint8_t src_r8, uint8_t src_g8, uint8_t src_b8, uint8_
 		r = fminf(dr, sr);
 		g = fminf(dg, sg);
 		b = fminf(db, sb);
+		break;
+	case BLEND_COLOR_BURN:
+		r = (sr == 0) ? 0 : CLAMP(1.0 - ((1.0 - dr) * 1.0/sr), 0.0f, 1.0f);
+		g = (sg == 0) ? 0 : CLAMP(1.0 - ((1.0 - dg) * 1.0/sg), 0.0f, 1.0f);
+		b = (sb == 0) ? 0 : CLAMP(1.0 - ((1.0 - db) * 1.0/sb), 0.0f, 1.0f);
+		break;
+	case BLEND_COLOR_DODGE:
+		r = (sr == 1.0) ? 1.0 : CLAMP(dr / (1.0 - sr), 0.0f, 1.0f);
+		g = (sg == 1.0) ? 1.0 : CLAMP(dg / (1.0 - sg), 0.0f, 1.0f);
+		b = (sb == 1.0) ? 1.0 : CLAMP(db / (1.0 - sb), 0.0f, 1.0f);
+		break;
+	case BLEND_LINEAR_BURN:
+		r = CLAMP(dr + sr - 1.0, 0.0f, 1.0f);
+		g = CLAMP(dg + sg - 1.0, 0.0f, 1.0f);
+		b = CLAMP(db + sb - 1.0, 0.0f, 1.0f);
+		break;
+	case BLEND_LINEAR_DODGE:
+		r = CLAMP(dr + sr, 0.0f, 1.0f);
+		g = CLAMP(dg + sg, 0.0f, 1.0f);
+		b = CLAMP(db + sb, 0.0f, 1.0f);
 		break;
 	case BLEND_COLOR_ERASE:
 		/* Reduce destination color toward gray where source is similar */
@@ -424,6 +494,7 @@ blend_pixel(uint8_t *dst, uint8_t src_r8, uint8_t src_g8, uint8_t src_b8, uint8_
 		b = result.b;
 		break;
 	}
+	case BLEND_NORMAL:
 	default: /* normal */
 		r = sr;
 		g = sg;

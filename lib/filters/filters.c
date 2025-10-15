@@ -8,6 +8,7 @@
 #include "filter_contrast.c"
 #include "filter_crt.c"
 #include "filter_distortion.c"
+#include "filter_dropshadow.c"
 #include "filter_emboss.c"
 #include "filter_film_grain.c"
 #include "filter_flip.c"

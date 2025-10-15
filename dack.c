@@ -14,6 +14,7 @@
 #endif
 
 #define MAX(A, B)               ((A) > (B) ? (A) : (B))
+#define MIN(A, B)               ((A) < (B) ? (A) : (B))
 #define CLAMP(V,L,U) (V < L ? L : V > U ? U : V)
 #define CLAMP255(V) CLAMP(V,0,255)
 

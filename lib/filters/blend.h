@@ -50,6 +50,7 @@ typedef enum {
 	BLEND_VIVID_LIGHT,
 	BLEND_LINEAR_LIGHT,
 	BLEND_HARD_MIX,
+	BLEND_MIN,
 	BLEND_MAX,
 	BLEND_HSV_HUE,
 	BLEND_HSV_SATURATION,
@@ -117,5 +118,6 @@ static RGB hsl_to_rgb(HSL c);
 static LCH rgb_to_lch(RGB c);
 static RGB lch_to_rgb(LCH c);
 static RGB blend_hsl_mode(RGB dst, RGB src, int mode);
+static RGB blend_lch_mode(RGB dst, RGB src, int mode);
 static inline void blend_pixel(uint8_t *dst, uint8_t sr, uint8_t sg, uint8_t sb, uint8_t sa, float blend, BlendMode mode);
 static void blend_images(XImage *dst, XImage *src, Monitor *m, float blend, BlendMode mode);
