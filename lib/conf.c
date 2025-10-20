@@ -56,17 +56,17 @@ set_config_path(const char* filename, char *config_path, char *config_file)
 
     if (startswith("/", filename)) {
         char *dname = strdup(filename);
-        snprintf(config_path, PATH_MAX, "%s", dirname(dname));
+        snprintf(config_path, DIR_MAX, "%s", dirname(dname));
         snprintf(config_file, PATH_MAX, "%s", filename);
         free(dname);
         return;
     }
 
     if (xdg_config_home && xdg_config_home[0] != '\0') {
-        snprintf(config_path, PATH_MAX, "%s/%s", xdg_config_home, progname);
+        snprintf(config_path, DIR_MAX, "%s/%s", xdg_config_home, progname);
         snprintf(config_file, PATH_MAX, "%s/%s", config_path, filename);
     } else if (home) {
-        snprintf(config_path, PATH_MAX, "%s/.config/%s", home, progname);
+        snprintf(config_path, DIR_MAX, "%s/.config/%s", home, progname);
         snprintf(config_file, PATH_MAX, "%s/%s", config_path, filename);
     }
 }
