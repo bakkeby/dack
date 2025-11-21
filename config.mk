@@ -16,8 +16,8 @@ PKG_CONFIG = pkg-config
 # to be used as a background. Note that if this is not included dack can still read a
 # farbfeld image without the use of this library. Screenshot of the current desktop is
 # also done without the use of this library.
-# IMLIB=-lImlib2
-# IM=-DHAVE_IMLIB=1
+IMLIB=-lImlib2
+IM=-DHAVE_IMLIB=1
 
 CONFIG = `$(PKG_CONFIG) --libs libconfig`
 BZ2 = `$(PKG_CONFIG) --libs bzip2`

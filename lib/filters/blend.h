@@ -114,6 +114,7 @@ static const struct blend_map blend_names[] = {
 	{ "LINEAR_LIGHT", BLEND_LINEAR_LIGHT },
 	{ "HARD_MIX", BLEND_HARD_MIX },
 	{ "MAX", BLEND_MAX },
+	{ "MIN", BLEND_MIN },
 	{ "HSV_HUE", BLEND_HSV_HUE },
 	{ "HSV_SATURATION", BLEND_HSV_SATURATION },
 	{ "HSV_COLOR", BLEND_HSV_COLOR },

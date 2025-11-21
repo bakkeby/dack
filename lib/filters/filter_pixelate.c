@@ -7,6 +7,10 @@ filter_pixelate(XImage *img, EffectParams *p, struct lock *lock)
 	int bpp    = img->bits_per_pixel / 8;
 	int pitch  = img->bytes_per_line;
 
+	/* Nothing to do */
+	if (block_size <= 0)
+		return;
+
 	for (int by = 0; by < height; by += block_size) {
 		for (int bx = 0; bx < width; bx += block_size) {
 			int rsum = 0, gsum = 0, bsum = 0, count = 0;

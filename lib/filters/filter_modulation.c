@@ -66,7 +66,7 @@ filter_modulation_glitch(XImage *img, EffectParams *p, struct lock *lock)
 				if (bsrcx >= img->width) bsrcx = img->width - 1;
 
 				dst[2] = rowbuf[rsrcx * bpp + 2]; /* red from shifted location */
-				dst[1] = rowbuf[gsrcx * bpp + 1]; /* red from shifted location */
+				dst[1] = rowbuf[gsrcx * bpp + 1]; /* green from shifted location */
 				dst[0] = rowbuf[bsrcx * bpp + 0]; /* blue from shifted location */
 			}
 		}

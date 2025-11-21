@@ -9,6 +9,8 @@ filter_color_bleed(XImage *img, EffectParams *p, struct lock *lock)
 	int radius = (int)p->parameters[0]; /* bleed radius */
 	double strength = p->parameters[1]; /* how much to blend */
 
+	if (radius < 0) return;
+
 	uint8_t *rowbuf = malloc(stride);
 	if (!rowbuf) return;
 

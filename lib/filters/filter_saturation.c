@@ -30,16 +30,20 @@ filter_saturation(XImage *img, EffectParams *p, struct lock *lock)
 					.b = px[0],
 				};
 
-				HSL hsl = rgb_to_hsl(rgb);
+				/* Compute perceived luminance (rec. 601 luma) */
+				double gray =
+				    0.299 * rgb.r +
+				    0.587 * rgb.g +
+				    0.114 * rgb.b;
 
-				hsl.s *= factor;
-				if (hsl.s > 1.0) hsl.s = 1.0;
+				/* Interpolate away from gray */
+				double r = gray + (rgb.r - gray) * factor;
+				double g = gray + (rgb.g - gray) * factor;
+				double b = gray + (rgb.b - gray) * factor;
 
-				rgb = hsl_to_rgb(hsl);
-
-				px[2] = rgb.r;
-				px[1] = rgb.g;
-				px[0] = rgb.b;
+				px[2] = CLAMP255(r);
+				px[1] = CLAMP255(g);
+				px[0] = CLAMP255(b);
 			}
 		}
 	}

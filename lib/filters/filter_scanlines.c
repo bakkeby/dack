@@ -4,6 +4,9 @@ filter_scanlines(XImage *img, EffectParams *p, struct lock *lock)
     int spacing = p->parameters[0];
     float intensity = (float)p->parameters[1];
 
+    if (spacing <= 0)
+        return;
+
     int width  = img->width;
     int height = img->height;
     int bpp    = img->bits_per_pixel / 8;

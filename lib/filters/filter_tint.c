@@ -32,13 +32,9 @@ filter_tint(XImage *img, EffectParams *p, struct lock *lock)
 			int ng = (int)((1.0 - blend) * g + blend * tint_g);
 			int nb = (int)((1.0 - blend) * b + blend * tint_b);
 
-			if (nr < 0) { nr = 0; }; if (nr > 255) { nr = 255; };
-			if (ng < 0) { ng = 0; }; if (ng > 255) { ng = 255; };
-			if (nb < 0) { nb = 0; }; if (nb > 255) { nb = 255; };
-
-			px[2] = (unsigned char)nr;
-			px[1] = (unsigned char)ng;
-			px[0] = (unsigned char)nb;
+			px[2] = CLAMP255(nr);
+			px[1] = CLAMP255(ng);
+			px[0] = CLAMP255(nb);
 		}
 	}
 }

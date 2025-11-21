@@ -274,6 +274,12 @@ blend_pixel(uint8_t *dst, uint8_t src_r8, uint8_t src_g8, uint8_t src_b8, uint8_
 		g = dg * sg;
 		b = db * sb;
 		break;
+	case BLEND_DIVIDE:
+		/* divide safely */
+		r = CLAMP((sr <= 0.0f) ? 1.0f : dr / sr, 0.0f, 1.0f);
+		g = CLAMP((sg <= 0.0f) ? 1.0f : dg / sg, 0.0f, 1.0f);
+		b = CLAMP((sb <= 0.0f) ? 1.0f : db / sb, 0.0f, 1.0f);
+		break;
 	case BLEND_SCREEN:
 		r = 1.0f - (1.0f - dr) * (1.0f - sr);
 		g = 1.0f - (1.0f - dg) * (1.0f - sg);
@@ -283,16 +289,6 @@ blend_pixel(uint8_t *dst, uint8_t src_r8, uint8_t src_g8, uint8_t src_b8, uint8_
 		r = (sr + dr < 1.0f ? 0.0f : 1.0f);
 		g = (sg + dg < 1.0f ? 0.0f : 1.0f);
 		b = (sb + db < 1.0f ? 0.0f : 1.0f);
-		break;
-	case BLEND_MAX:
-		r = MAX(sr, dr);
-		g = MAX(sg, dg);
-		b = MAX(sb, db);
-		break;
-	case BLEND_MIN:
-		r = MIN(sr, dr);
-		g = MIN(sg, dg);
-		b = MIN(sb, db);
 		break;
 	case BLEND_OVERLAY:
 		r = (dr < 0.5f) ? (2.0f * dr * sr) : (1.0f - 2.0f * (1.0f - dr) * (1.0f - sr));
@@ -342,6 +338,7 @@ blend_pixel(uint8_t *dst, uint8_t src_r8, uint8_t src_g8, uint8_t src_b8, uint8_
 		g = CLAMP(dg + 2 * sg - 1.0, 0.0f, 1.0f);
 		b = CLAMP(db + 2 * sb - 1.0, 0.0f, 1.0f);
 		break;
+	case BLEND_SPLIT:
 	case BLEND_DIFFERENCE:
 		r = fabsf(dr - sr);
 		g = fabsf(dg - sg);
@@ -351,11 +348,6 @@ blend_pixel(uint8_t *dst, uint8_t src_r8, uint8_t src_g8, uint8_t src_b8, uint8_
 		r = (dr + sr - 2 * dr * sr);
 		g = (dg + sg - 2 * dg * sg);
 		b = (db + sb - 2 * db * sb);
-		break;
-	case BLEND_ADD:
-		r = fminf(dr + sr, 1.0f);
-		g = fminf(dg + sg, 1.0f);
-		b = fminf(db + sb, 1.0f);
 		break;
 	case BLEND_SUBTRACT:
 		r = fmaxf(dr - sr, 0.0f);
@@ -392,15 +384,17 @@ blend_pixel(uint8_t *dst, uint8_t src_r8, uint8_t src_g8, uint8_t src_b8, uint8_
 		g = dg * (1.0f - alpha) + sg * (1.0f - dg);
 		b = db * (1.0f - alpha) + sb * (1.0f - db);
 		break;
+	case BLEND_MAX:
 	case BLEND_LIGHTEN:
-		r = fmaxf(dr, sr);
-		g = fmaxf(dg, sg);
-		b = fmaxf(db, sb);
+		r = MAX(sr, dr);
+		g = MAX(sg, dg);
+		b = MAX(sb, db);
 		break;
+	case BLEND_MIN:
 	case BLEND_DARKEN:
-		r = fminf(dr, sr);
-		g = fminf(dg, sg);
-		b = fminf(db, sb);
+		r = MIN(sr, dr);
+		g = MIN(sg, dg);
+		b = MIN(sb, db);
 		break;
 	case BLEND_COLOR_BURN:
 		r = (sr == 0) ? 0 : CLAMP(1.0 - ((1.0 - dr) * 1.0/sr), 0.0f, 1.0f);
@@ -417,6 +411,7 @@ blend_pixel(uint8_t *dst, uint8_t src_r8, uint8_t src_g8, uint8_t src_b8, uint8_
 		g = CLAMP(dg + sg - 1.0, 0.0f, 1.0f);
 		b = CLAMP(db + sb - 1.0, 0.0f, 1.0f);
 		break;
+	case BLEND_ADD:
 	case BLEND_LINEAR_DODGE:
 		r = CLAMP(dr + sr, 0.0f, 1.0f);
 		g = CLAMP(dg + sg, 0.0f, 1.0f);
@@ -433,12 +428,6 @@ blend_pixel(uint8_t *dst, uint8_t src_r8, uint8_t src_g8, uint8_t src_b8, uint8_
 		r = (dr + sr) * 0.5f;
 		g = (dg + sg) * 0.5f;
 		b = (db + sb) * 0.5f;
-		break;
-	case BLEND_SPLIT:
-		/* Difference split mode */
-		r = fabsf(dr - sr);
-		g = fabsf(dg - sg);
-		b = fabsf(db - sb);
 		break;
 	case BLEND_ATTRITION:
 		/* Random erosion effect — darkens randomly */
@@ -463,12 +452,6 @@ blend_pixel(uint8_t *dst, uint8_t src_r8, uint8_t src_g8, uint8_t src_b8, uint8_
 		r = CLAMP(dr + sr - 0.5f, 0.0f, 1.0f);
 		g = CLAMP(dg + sg - 0.5f, 0.0f, 1.0f);
 		b = CLAMP(db + sb - 0.5f, 0.0f, 1.0f);
-		break;
-	case BLEND_DIVIDE:
-		/* divide safely */
-		r = CLAMP((sr <= 0.0f) ? 1.0f : dr / sr, 0.0f, 1.0f);
-		g = CLAMP((sg <= 0.0f) ? 1.0f : dg / sg, 0.0f, 1.0f);
-		b = CLAMP((sb <= 0.0f) ? 1.0f : db / sb, 0.0f, 1.0f);
 		break;
 	case BLEND_LCH_HUE:
 	case BLEND_LCH_CHROMA:
