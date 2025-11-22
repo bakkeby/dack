@@ -9,9 +9,6 @@
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 #include <time.h>
-#ifdef XINERAMA
-#include <X11/extensions/Xinerama.h>
-#endif
 
 #define MAX(A, B)               ((A) > (B) ? (A) : (B))
 #define MIN(A, B)               ((A) < (B) ? (A) : (B))
