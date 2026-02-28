@@ -1,4 +1,3 @@
-
 #include "libconfig_helper_functions.h"
 
 int

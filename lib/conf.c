@@ -1,8 +1,5 @@
 #include <libconfig.h>
-#include <libgen.h>
 
-#define DIR_MAX 4080
-#define PATH_MAX 4096
 const char *progname = "dack";
 static char *cfg_filename = "dack.cfg";
 static char *cmd_filename = NULL;
@@ -20,7 +17,7 @@ static XRectangle *rectangles = NULL;
 
 static int parse_blend_name(const char *name);
 static int parse_blend_position(const char *name);
-static void set_config_path(const char* filename, char *config_path, char *config_file);
+static char *get_config_path(const char* filename);
 static void cleanup_config(void);
 static void load_config(void);
 static void load_fallback_config(void);
@@ -48,35 +45,33 @@ strtopixel(Display *dpy, int cmap, const char *string)
 	return color.pixel;
 }
 
-void
-set_config_path(const char* filename, char *config_path, char *config_file)
+char *
+get_config_path(const char *filename)
 {
-    const char *xdg_config_home = getenv("XDG_CONFIG_HOME");
-    const char *home = getenv("HOME");
+	if (!filename)
+		return NULL;
 
-    if (startswith("/", filename)) {
-        char *dname = strdup(filename);
-        snprintf(config_path, DIR_MAX, "%s", dirname(dname));
-        snprintf(config_file, PATH_MAX, "%s", filename);
-        free(dname);
-        return;
-    }
+	if (startswith("/", filename)) {
+		return strdup(filename);
+	}
 
-    if (xdg_config_home && xdg_config_home[0] != '\0') {
-        snprintf(config_path, DIR_MAX, "%s/%s", xdg_config_home, progname);
-        snprintf(config_file, PATH_MAX, "%s/%s", config_path, filename);
-    } else if (home) {
-        snprintf(config_path, DIR_MAX, "%s/.config/%s", home, progname);
-        snprintf(config_file, PATH_MAX, "%s/%s", config_path, filename);
-    }
+	const char *xdg_config_home = getenv("XDG_CONFIG_HOME");
+	if (xdg_config_home && xdg_config_home[0] != '\0') {
+		return xasprintf("%s/%s/%s", xdg_config_home, progname, filename);
+	}
+
+	const char *home = getenv("HOME");
+	if (home && home[0] != '\0') {
+		return xasprintf("%s/.config/%s/%s", home, progname, filename);
+	}
+
+	return NULL;
 }
 
 void
 load_config(void)
 {
 	config_t cfg;
-	char config_path[DIR_MAX] = {0};
-	char config_file[PATH_MAX] = {0};
 
 	const char *envcfg = getenv("DACK_CONFIG_PATH");
 	const char *filename = (
@@ -87,7 +82,9 @@ load_config(void)
 		: cfg_filename
 	);
 
-	set_config_path(filename, config_path, config_file);
+	char *config_file = get_config_path(filename);
+	char *config_path = path_dirname(config_file);
+
 	config_init(&cfg);
 	config_set_include_dir(&cfg, config_path);
 
@@ -105,6 +102,9 @@ load_config(void)
 			config_error_text(&cfg)
 		);
 	}
+
+	free(config_file);
+	free(config_path);
 
 	load_fallback_config();
 	config_destroy(&cfg);
